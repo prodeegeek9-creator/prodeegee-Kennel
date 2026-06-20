@@ -1,0 +1,775 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Prodeegee Kennel</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #111A11;
+    --surface: #1C2B1C;
+    --surface2: #243224;
+    --border: rgba(255,255,255,0.08);
+    --border2: rgba(255,255,255,0.14);
+    --cream: #F5F0E8;
+    --cream-muted: rgba(245,240,232,0.55);
+    --cream-dim: rgba(245,240,232,0.28);
+    --sage: #6B8F6B;
+    --sage-bg: rgba(107,143,107,0.15);
+    --amber: #E8A020;
+    --amber-bg: rgba(232,160,32,0.12);
+    --coral: #D94F3A;
+    --coral-bg: rgba(217,79,58,0.12);
+    --pink: #E8608A;
+    --mono: 'DM Mono', monospace;
+    --sans: 'Inter', sans-serif;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--cream);
+    font-family: var(--sans);
+    font-size: 14px;
+    min-height: 100vh;
+    padding-bottom: 40px;
+  }
+
+  /* ── HEADER ── */
+  .header {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: rgba(17,26,17,0.95);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+    padding: 14px 16px 12px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .header-left { display: flex; align-items: center; gap: 10px; }
+  .kennel-dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--sage); 
+    box-shadow: 0 0 6px var(--sage);
+  }
+  .kennel-dot.alert { background: var(--coral); box-shadow: 0 0 6px var(--coral); animation: pulse 1.4s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+  .kennel-name { font-size: 15px; font-weight: 600; letter-spacing: -0.02em; }
+  .kennel-sub { font-size: 11px; color: var(--cream-muted); margin-top: 1px; }
+  .last-sync { font-size: 11px; color: var(--cream-dim); font-family: var(--mono); }
+
+  /* ── ALERT STRIP ── */
+  .alert-strip {
+    background: var(--coral-bg);
+    border-bottom: 1px solid rgba(217,79,58,0.25);
+    padding: 10px 16px;
+    display: none;
+  }
+  .alert-strip.visible { display: block; }
+  .alert-strip-label {
+    font-size: 10px; font-weight: 600; letter-spacing: .08em;
+    color: var(--coral); text-transform: uppercase; margin-bottom: 6px;
+  }
+  .alert-item {
+    font-size: 12px; color: var(--cream);
+    padding: 6px 0; border-bottom: 1px solid rgba(217,79,58,0.12);
+    display: flex; justify-content: space-between; align-items: flex-start; gap: 8px;
+  }
+  .alert-item:last-child { border-bottom: none; padding-bottom: 0; }
+  .alert-item-text { line-height: 1.45; flex: 1; }
+  .alert-time { font-family: var(--mono); font-size: 10px; color: var(--coral); white-space: nowrap; }
+
+  /* ── SECTION HEADER ── */
+  .section-head {
+    padding: 18px 16px 8px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .section-label {
+    font-size: 10px; font-weight: 600; letter-spacing: .1em;
+    text-transform: uppercase; color: var(--cream-dim);
+  }
+  .section-count {
+    font-family: var(--mono); font-size: 11px; color: var(--cream-muted);
+  }
+
+  /* ── STATUS BAR ── */
+  .status-bar {
+    margin: 0 16px 16px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 14px 16px;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+  }
+  .stat-block { text-align: center; }
+  .stat-value {
+    font-family: var(--mono); font-size: 22px; font-weight: 500;
+    line-height: 1; color: var(--cream);
+  }
+  .stat-value.ok { color: var(--sage); }
+  .stat-value.warn { color: var(--amber); }
+  .stat-value.bad { color: var(--coral); }
+  .stat-label {
+    font-size: 10px; color: var(--cream-dim);
+    margin-top: 4px; letter-spacing: .04em;
+  }
+  .stat-divider {
+    width: 1px; background: var(--border);
+    grid-row: 1; align-self: stretch; margin: auto;
+  }
+
+  /* ── DOG CARD ── */
+  .card-stack { padding: 0 16px; display: flex; flex-direction: column; gap: 10px; }
+
+  .dog-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    overflow: hidden;
+    transition: border-color .2s;
+  }
+  .dog-card.flagged { border-color: rgba(217,79,58,0.4); }
+  .dog-card.heat-watch { border-color: rgba(232,160,32,0.35); }
+
+  .card-header {
+    padding: 14px 14px 12px;
+    display: flex; align-items: flex-start; gap: 12px;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* Heat ring SVG */
+  .heat-ring-wrap { flex-shrink: 0; position: relative; width: 44px; height: 44px; }
+  .heat-ring-wrap svg { position: absolute; top: 0; left: 0; }
+  .dog-initial {
+    position: absolute; inset: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px; font-weight: 600; color: var(--cream);
+    font-family: var(--mono);
+  }
+
+  .card-meta { flex: 1; min-width: 0; }
+  .dog-name { font-size: 16px; font-weight: 600; letter-spacing: -.02em; line-height: 1; }
+  .dog-sub {
+    font-size: 11px; color: var(--cream-muted);
+    margin-top: 3px; display: flex; align-items: center; gap: 6px;
+  }
+  .dog-tag {
+    display: inline-block;
+    font-size: 10px; font-weight: 500; font-family: var(--mono);
+    padding: 2px 6px; border-radius: 4px; line-height: 1.4;
+  }
+  .tag-ok { background: var(--sage-bg); color: var(--sage); }
+  .tag-warn { background: var(--amber-bg); color: var(--amber); }
+  .tag-bad { background: var(--coral-bg); color: var(--coral); }
+  .tag-heat { background: rgba(232,96,138,0.12); color: var(--pink); }
+
+  .card-right { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
+  .card-chevron { color: var(--cream-dim); font-size: 16px; transition: transform .2s; }
+  .dog-card.open .card-chevron { transform: rotate(180deg); }
+  .last-fed { font-family: var(--mono); font-size: 10px; color: var(--cream-dim); text-align: right; }
+
+  /* Vitals row in header */
+  .vitals-row {
+    display: flex; gap: 12px; margin-top: 8px;
+  }
+  .vital {
+    display: flex; flex-direction: column;
+  }
+  .vital-val { font-family: var(--mono); font-size: 13px; font-weight: 500; }
+  .vital-lbl { font-size: 10px; color: var(--cream-dim); margin-top: 1px; }
+
+  /* ── CARD EXPANDED ── */
+  .card-body {
+    display: none;
+    border-top: 1px solid var(--border);
+    padding: 12px 14px 14px;
+  }
+  .dog-card.open .card-body { display: block; }
+
+  .detail-grid {
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: 8px; margin-bottom: 12px;
+  }
+  .detail-cell {
+    background: var(--surface2);
+    border-radius: 8px; padding: 10px 12px;
+  }
+  .detail-val { font-family: var(--mono); font-size: 15px; font-weight: 500; }
+  .detail-lbl { font-size: 10px; color: var(--cream-dim); margin-top: 3px; }
+
+  .heat-bar-wrap { margin-bottom: 12px; }
+  .heat-bar-label {
+    display: flex; justify-content: space-between;
+    font-size: 11px; color: var(--cream-muted); margin-bottom: 6px;
+  }
+  .heat-bar-track {
+    height: 4px; background: var(--surface2); border-radius: 2px; overflow: hidden;
+  }
+  .heat-bar-fill { height: 100%; border-radius: 2px; transition: width .4s; }
+  .heat-bar-fill.ok { background: var(--sage); }
+  .heat-bar-fill.warn { background: var(--amber); }
+  .heat-bar-fill.hot { background: var(--pink); }
+
+  .history-label {
+    font-size: 10px; font-weight: 600; letter-spacing: .08em;
+    text-transform: uppercase; color: var(--cream-dim); margin-bottom: 8px;
+  }
+  .log-row {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 7px 0; border-bottom: 1px solid var(--border);
+    font-size: 12px;
+  }
+  .log-row:last-child { border-bottom: none; }
+  .log-type { color: var(--cream-muted); }
+  .log-val { font-family: var(--mono); font-size: 11px; color: var(--cream); }
+  .log-time { font-family: var(--mono); font-size: 10px; color: var(--cream-dim); }
+
+  /* ── PUPPY SECTION ── */
+  .litter-card {
+    margin: 0 16px 10px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px; overflow: hidden;
+  }
+  .litter-header {
+    padding: 12px 14px;
+    border-bottom: 1px solid var(--border);
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .litter-name { font-size: 13px; font-weight: 600; }
+  .litter-meta { font-size: 11px; color: var(--cream-muted); margin-top: 2px; }
+  .litter-age { font-family: var(--mono); font-size: 12px; color: var(--amber); }
+
+  .puppy-row {
+    padding: 11px 14px;
+    border-bottom: 1px solid var(--border);
+    display: grid;
+    grid-template-columns: 1fr auto auto auto;
+    gap: 8px; align-items: center;
+  }
+  .puppy-row:last-child { border-bottom: none; }
+  .puppy-id { font-size: 13px; font-weight: 500; }
+  .puppy-desc { font-size: 11px; color: var(--cream-muted); margin-top: 2px; }
+  .puppy-stat { text-align: right; }
+  .puppy-stat-val { font-family: var(--mono); font-size: 13px; }
+  .puppy-stat-lbl { font-size: 9px; color: var(--cream-dim); margin-top: 1px; }
+  .puppy-stat-val.ok { color: var(--sage); }
+  .puppy-stat-val.warn { color: var(--amber); }
+  .puppy-stat-val.bad { color: var(--coral); }
+  .puppy-status-pill {
+    font-size: 9px; font-family: var(--mono); font-weight: 500;
+    padding: 2px 6px; border-radius: 10px;
+  }
+
+  /* ── ALERTS TAB ── */
+  .tab-bar {
+    display: flex; border-bottom: 1px solid var(--border);
+    margin: 16px 16px 0; gap: 0;
+  }
+  .tab {
+    flex: 1; padding: 10px 8px; text-align: center;
+    font-size: 12px; font-weight: 500; color: var(--cream-dim);
+    cursor: pointer; border-bottom: 2px solid transparent;
+    transition: color .15s, border-color .15s;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .tab.active { color: var(--sage); border-bottom-color: var(--sage); }
+
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  .alert-card {
+    margin: 12px 16px 0;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px; padding: 12px 14px;
+  }
+  .alert-card.urgent { border-color: rgba(217,79,58,0.35); }
+  .alert-card.advisory { border-color: rgba(232,160,32,0.3); }
+  .alert-priority {
+    font-size: 9px; font-weight: 600; letter-spacing: .1em;
+    text-transform: uppercase; margin-bottom: 6px; font-family: var(--mono);
+  }
+  .alert-priority.urgent { color: var(--coral); }
+  .alert-priority.advisory { color: var(--amber); }
+  .alert-card .alert-msg { font-size: 12px; line-height: 1.55; color: var(--cream-muted); }
+  .alert-card .alert-footer {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-top: 10px; padding-top: 8px; border-top: 1px solid var(--border);
+  }
+  .alert-dog { font-size: 11px; font-weight: 500; }
+  .alert-ts { font-family: var(--mono); font-size: 10px; color: var(--cream-dim); }
+
+  /* ── EMPTY STATE ── */
+  .empty {
+    padding: 40px 16px; text-align: center; color: var(--cream-dim);
+    font-size: 13px; line-height: 1.6;
+  }
+  .empty-icon { font-size: 32px; margin-bottom: 12px; }
+
+  /* ── LOADING ── */
+  .loading-shimmer {
+    margin: 0 16px 10px;
+    height: 88px; border-radius: 14px;
+    background: linear-gradient(90deg, var(--surface) 25%, var(--surface2) 50%, var(--surface) 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.4s infinite;
+  }
+  @keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-left">
+    <div class="kennel-dot" id="statusDot"></div>
+    <div>
+      <div class="kennel-name">Prodeegee Kennel</div>
+      <div class="kennel-sub" id="headerSub">Loading…</div>
+    </div>
+  </div>
+  <div class="last-sync" id="lastSync">—</div>
+</div>
+
+<div class="alert-strip" id="alertStrip">
+  <div class="alert-strip-label">Urgent alerts</div>
+  <div id="alertStripItems"></div>
+</div>
+
+<!-- TABS -->
+<div class="tab-bar">
+  <div class="tab active" onclick="switchTab('kennel')">Kennel</div>
+  <div class="tab" onclick="switchTab('puppies')">Puppies</div>
+  <div class="tab" onclick="switchTab('alerts')">Alerts</div>
+</div>
+
+<!-- KENNEL TAB -->
+<div class="tab-panel active" id="tab-kennel">
+  <div class="section-head">
+    <span class="section-label">Today's status</span>
+    <span class="section-count" id="dogCount">—</span>
+  </div>
+  <div class="status-bar">
+    <div class="stat-block">
+      <div class="stat-value ok" id="statFed">—</div>
+      <div class="stat-label">fed today</div>
+    </div>
+    <div class="stat-block" style="border-left:1px solid var(--border); border-right:1px solid var(--border);">
+      <div class="stat-value" id="statDogs">—</div>
+      <div class="stat-label">active dogs</div>
+    </div>
+    <div class="stat-block">
+      <div class="stat-value" id="statAlerts">—</div>
+      <div class="stat-label">open alerts</div>
+    </div>
+  </div>
+  <div class="card-stack" id="dogCards">
+    <div class="loading-shimmer"></div>
+    <div class="loading-shimmer" style="height:72px"></div>
+  </div>
+</div>
+
+<!-- PUPPIES TAB -->
+<div class="tab-panel" id="tab-puppies">
+  <div class="section-head">
+    <span class="section-label">Active litters</span>
+    <span class="section-count" id="puppyCount">—</span>
+  </div>
+  <div id="puppyContent">
+    <div class="loading-shimmer" style="margin:0 16px 10px; height:180px;"></div>
+  </div>
+</div>
+
+<!-- ALERTS TAB -->
+<div class="tab-panel" id="tab-alerts">
+  <div class="section-head">
+    <span class="section-label">Recent alerts</span>
+    <span class="section-count" id="alertCount">—</span>
+  </div>
+  <div id="alertContent">
+    <div class="loading-shimmer" style="margin:0 16px 10px; height:100px;"></div>
+  </div>
+</div>
+
+<script>
+const SUPABASE_URL = 'https://fsrkzhknqonpjjkjwqlw.supabase.co';
+const SUPABASE_KEY = 'REPLACE_WITH_SUPABASE_ANON_KEY';
+
+const headers = {
+  'apikey': SUPABASE_KEY,
+  'Authorization': 'Bearer ' + SUPABASE_KEY,
+  'Content-Type': 'application/json'
+};
+
+let kennelState = null;
+let alertsData = [];
+
+// ── FETCH ──────────────────────────────────────────────
+
+async function fetchAll() {
+  try {
+    const [stateRes, alertsRes] = await Promise.all([
+      fetch(SUPABASE_URL + '/rest/v1/rpc/kennel_state_json', { method: 'POST', headers, body: '{}' }),
+      fetch(SUPABASE_URL + '/rest/v1/kennel.ai_alerts?order=triggered_at.desc&limit=20&status=eq.sent', { headers })
+    ]);
+    kennelState = await stateRes.json();
+    alertsData = await alertsRes.json();
+    render();
+  } catch(e) {
+    document.getElementById('headerSub').textContent = 'Could not connect';
+  }
+}
+
+// ── RENDER ─────────────────────────────────────────────
+
+function render() {
+  if (!kennelState) return;
+  const dogs = kennelState.dogs || [];
+  const litters = kennelState.litters || [];
+  const today = kennelState.today || new Date().toISOString().split('T')[0];
+
+  // Update sync time
+  const now = new Date();
+  document.getElementById('lastSync').textContent = now.getHours() + ':' + String(now.getMinutes()).padStart(2,'0');
+
+  const urgentAlerts = alertsData.filter(a => a.priority === 'urgent');
+  const openAlerts = alertsData.filter(a => a.status !== 'acknowledged');
+
+  // Alert strip
+  const strip = document.getElementById('alertStrip');
+  const stripItems = document.getElementById('alertStripItems');
+  if (urgentAlerts.length > 0) {
+    strip.classList.add('visible');
+    document.getElementById('statusDot').classList.add('alert');
+    stripItems.innerHTML = urgentAlerts.slice(0,3).map(a => `
+      <div class="alert-item">
+        <div class="alert-item-text">${escHtml(a.message_owner || '').slice(0,120)}${(a.message_owner||'').length > 120 ? '…' : ''}</div>
+        <div class="alert-time">${timeAgo(a.triggered_at)}</div>
+      </div>`).join('');
+  } else {
+    strip.classList.remove('visible');
+    document.getElementById('statusDot').classList.remove('alert');
+  }
+
+  // Status bar
+  const fedCount = dogs.filter(d => (d.recent_feeds||[]).length > 0).length;
+  const fedEl = document.getElementById('statFed');
+  fedEl.textContent = fedCount + '/' + dogs.length;
+  fedEl.className = 'stat-value ' + (fedCount === dogs.length ? 'ok' : fedCount === 0 ? 'bad' : 'warn');
+
+  document.getElementById('statDogs').textContent = dogs.length;
+  const alertEl = document.getElementById('statAlerts');
+  alertEl.textContent = openAlerts.length;
+  alertEl.className = 'stat-value ' + (openAlerts.length === 0 ? 'ok' : openAlerts.length > 2 ? 'bad' : 'warn');
+
+  document.getElementById('dogCount').textContent = dogs.length + ' dog' + (dogs.length !== 1 ? 's' : '');
+  document.getElementById('headerSub').textContent = dogs.length + ' dogs · ' + countLivePuppies(litters) + ' puppies';
+
+  // Dog cards
+  renderDogCards(dogs);
+  // Puppies
+  renderPuppies(litters, today);
+  // Alerts
+  renderAlerts();
+}
+
+function countLivePuppies(litters) {
+  let n = 0;
+  (litters||[]).forEach(l => (l.puppies||[]).forEach(p => { if (p.status !== 'sold' && p.status !== 'deceased') n++; }));
+  return n;
+}
+
+function renderDogCards(dogs) {
+  const el = document.getElementById('dogCards');
+  if (dogs.length === 0) {
+    el.innerHTML = '<div class="empty"><div class="empty-icon">🐕</div>No active dogs in the kennel.<br>Add your first dog to get started.</div>';
+    return;
+  }
+  el.innerHTML = dogs.map(dog => dogCardHTML(dog)).join('');
+}
+
+function dogCardHTML(dog) {
+  const cycles = dog.heat_cycles || [];
+  const lastCycle = cycles[0];
+  const daysSinceHeat = lastCycle ? Math.floor((Date.now() - new Date(lastCycle.cycle_start).getTime()) / 86400000) : null;
+  const avgCycle = 182;
+  const heatProgress = daysSinceHeat !== null ? Math.min(100, Math.round((daysSinceHeat / avgCycle) * 100)) : 0;
+  const inHeat = lastCycle && !lastCycle.cycle_end && daysSinceHeat !== null && daysSinceHeat < 28;
+  const heatSoon = !inHeat && heatProgress > 75;
+  const heatColor = inHeat ? '#E8608A' : heatSoon ? '#E8A020' : '#6B8F6B';
+  const heatStatus = inHeat ? 'In heat' : heatSoon ? 'Heat soon' : daysSinceHeat !== null ? 'Day ' + daysSinceHeat : 'No cycle';
+
+  const isFed = (dog.recent_feeds || []).length > 0;
+  const healthDue = (dog.health_due || []).length > 0;
+  const dueItems = dog.health_due || [];
+
+  // Heat ring SVG (44x44, stroke on circle r=19 circumference≈119.4)
+  const strokeDash = Math.round((heatProgress / 100) * 119.4);
+  const heatRing = dog.sex === 'female' ? `
+    <svg width="44" height="44" viewBox="0 0 44 44">
+      <circle cx="22" cy="22" r="19" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="2.5"/>
+      <circle cx="22" cy="22" r="19" fill="none" stroke="${heatColor}" stroke-width="2.5"
+        stroke-dasharray="${strokeDash} 119.4" stroke-dashoffset="0"
+        transform="rotate(-90 22 22)" stroke-linecap="round"/>
+    </svg>` : `
+    <svg width="44" height="44" viewBox="0 0 44 44">
+      <circle cx="22" cy="22" r="19" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="2.5"/>
+    </svg>`;
+
+  const statusTag = inHeat ? `<span class="dog-tag tag-heat">In heat</span>`
+    : heatSoon ? `<span class="dog-tag tag-warn">Heat soon</span>`
+    : isFed ? `<span class="dog-tag tag-ok">Fed</span>`
+    : `<span class="dog-tag tag-warn">Not fed</span>`;
+
+  const urgentDogAlert = alertsData.find(a => a.dog_id === dog.id && a.priority === 'urgent' && a.status !== 'acknowledged');
+  const cardClass = urgentDogAlert ? 'dog-card flagged' : heatSoon || inHeat ? 'dog-card heat-watch' : 'dog-card';
+
+  return `
+<div class="${cardClass}" id="card-${dog.id}">
+  <div class="card-header" onclick="toggleCard('${dog.id}')">
+    <div class="heat-ring-wrap">
+      ${heatRing}
+      <div class="dog-initial">${dog.name.charAt(0).toUpperCase()}</div>
+    </div>
+    <div class="card-meta">
+      <div class="dog-name">${escHtml(dog.name)}</div>
+      <div class="dog-sub">
+        <span>${escHtml(dog.breed || '')} · ${dog.sex}</span>
+        ${statusTag}
+        ${healthDue ? `<span class="dog-tag tag-warn">Due</span>` : ''}
+      </div>
+      ${urgentDogAlert ? `<div style="font-size:11px;color:var(--coral);margin-top:5px;">⚠ ${escHtml((urgentDogAlert.message_owner||'').slice(0,60))}…</div>` : ''}
+    </div>
+    <div class="card-right">
+      <div class="card-chevron">⌄</div>
+      <div class="last-fed">${isFed ? 'Fed today' : 'Not fed'}</div>
+    </div>
+  </div>
+  <div class="card-body">
+    ${dog.sex === 'female' ? `
+    <div class="heat-bar-wrap">
+      <div class="heat-bar-label">
+        <span>Heat cycle</span>
+        <span style="font-family:var(--mono);font-size:10px;">${heatStatus}</span>
+      </div>
+      <div class="heat-bar-track">
+        <div class="heat-bar-fill ${inHeat ? 'hot' : heatSoon ? 'warn' : 'ok'}" style="width:${heatProgress}%"></div>
+      </div>
+    </div>` : ''}
+    <div class="detail-grid">
+      <div class="detail-cell">
+        <div class="detail-val">${dog.age_years != null ? dog.age_years + 'y' : '—'}</div>
+        <div class="detail-lbl">Age</div>
+      </div>
+      <div class="detail-cell">
+        <div class="detail-val" style="color:${isFed ? 'var(--sage)' : 'var(--amber)'}">${isFed ? 'Done' : 'Pending'}</div>
+        <div class="detail-lbl">Today's feed</div>
+      </div>
+    </div>
+    ${dueItems.length > 0 ? `
+    <div class="history-label">Health schedule</div>
+    ${dueItems.map(h => `
+      <div class="log-row">
+        <span class="log-type">${escHtml(h.type || '')}</span>
+        <span class="log-val" style="color:var(--amber)">${escHtml(h.next_due || '')}</span>
+      </div>`).join('')}` : ''}
+    ${cycles.length > 0 ? `
+    <div class="history-label" style="margin-top:10px;">Cycle history</div>
+    ${cycles.slice(0,3).map(c => `
+      <div class="log-row">
+        <span class="log-type">Started ${escHtml(c.cycle_start || '')}</span>
+        <span class="log-val">${c.cycle_end ? 'Ended ' + escHtml(c.cycle_end) : 'Active'}</span>
+      </div>`).join('')}` : ''}
+  </div>
+</div>`;
+}
+
+function renderPuppies(litters, today) {
+  const el = document.getElementById('puppyContent');
+  const liveLitters = (litters || []).filter(l => (l.puppies||[]).some(p => p.status !== 'sold' && p.status !== 'deceased'));
+
+  if (liveLitters.length === 0) {
+    el.innerHTML = '<div class="empty"><div class="empty-icon">🐶</div>No active litters.<br>When a litter is born it will appear here.</div>';
+    document.getElementById('puppyCount').textContent = '0 puppies';
+    return;
+  }
+
+  let totalPups = 0;
+  el.innerHTML = liveLitters.map(litter => {
+    const ageDays = litter.litter_age_days || 0;
+    const livePups = (litter.puppies||[]).filter(p => p.status !== 'sold' && p.status !== 'deceased');
+    totalPups += livePups.length;
+    const ageLabel = ageDays === 1 ? '1 day old' : ageDays + ' days old';
+
+    return `
+<div class="litter-card">
+  <div class="litter-header">
+    <div>
+      <div class="litter-name">${escHtml(litter.litter_name || 'Litter')}</div>
+      <div class="litter-meta">${livePups.length} live · born ${escHtml(litter.whelp_date || '')}</div>
+    </div>
+    <div class="litter-age">${ageLabel}</div>
+  </div>
+  ${livePups.map((p, i) => puppyRowHTML(p, i, ageDays)).join('')}
+</div>`;
+  }).join('');
+
+  document.getElementById('puppyCount').textContent = totalPups + ' puppy' + (totalPups !== 1 ? 'ies' : '');
+}
+
+function puppyRowHTML(p, i, litterAgeDays) {
+  const wt = p.latest_weight ? p.latest_weight.weight_grams : null;
+  const prevWt = p.prev_weight ? p.prev_weight.weight_grams : null;
+  const temp = p.latest_temp ? p.latest_temp.temp_celsius : null;
+  const tempFlag = p.latest_temp ? p.latest_temp.flag : null;
+
+  let wtColor = 'ok';
+  let wtDelta = '';
+  if (wt !== null && prevWt !== null) {
+    const delta = wt - prevWt;
+    wtDelta = (delta >= 0 ? '+' : '') + delta + 'g';
+    wtColor = delta < 0 ? (Math.abs(delta)/prevWt > 0.05 ? 'bad' : 'warn') : 'ok';
+  }
+
+  let tempColor = 'ok';
+  if (tempFlag === 'low') tempColor = 'bad';
+  if (tempFlag === 'high') tempColor = 'warn';
+
+  const statusColors = { available:'rgba(107,143,107,0.15)', reserved:'rgba(232,160,32,0.15)', sold:'rgba(217,79,58,0.15)', deceased:'rgba(100,100,100,0.15)' };
+  const statusTextColors = { available:'var(--sage)', reserved:'var(--amber)', sold:'var(--coral)', deceased:'var(--cream-dim)' };
+
+  return `
+<div class="puppy-row">
+  <div>
+    <div class="puppy-id">${escHtml(p.name || 'Pup ' + (i+1))}</div>
+    <div class="puppy-desc">${escHtml(p.colour || '')} · ${p.sex} · day ${litterAgeDays}</div>
+  </div>
+  <div class="puppy-stat">
+    <div class="puppy-stat-val ${wtColor}">${wt !== null ? wt + 'g' : '—'}</div>
+    <div class="puppy-stat-lbl">${wtDelta || 'weight'}</div>
+  </div>
+  <div class="puppy-stat">
+    <div class="puppy-stat-val ${tempColor}">${temp !== null ? temp + '°' : '—'}</div>
+    <div class="puppy-stat-lbl">temp</div>
+  </div>
+  <div>
+    <span class="puppy-status-pill" style="background:${statusColors[p.status]||'transparent'};color:${statusTextColors[p.status]||'var(--cream-dim)'};">${p.status||'—'}</span>
+  </div>
+</div>`;
+}
+
+function renderAlerts() {
+  const el = document.getElementById('alertContent');
+  document.getElementById('alertCount').textContent = alertsData.length + ' recent';
+
+  if (alertsData.length === 0) {
+    el.innerHTML = '<div class="empty"><div class="empty-icon">✓</div>No alerts. All clear.</div>';
+    return;
+  }
+  el.innerHTML = alertsData.map(a => `
+<div class="alert-card ${a.priority}">
+  <div class="alert-priority ${a.priority}">${a.priority === 'urgent' ? '⚠ Urgent' : a.priority === 'advisory' ? '◈ Advisory' : 'Info'}</div>
+  <div class="alert-msg">${escHtml((a.message_owner||'').slice(0,240))}${(a.message_owner||'').length > 240 ? '…' : ''}</div>
+  <div class="alert-footer">
+    <div class="alert-dog">${escHtml(a.alert_type ? a.alert_type.replace(/_/g,' ') : '')}</div>
+    <div class="alert-ts">${timeAgo(a.triggered_at)}</div>
+  </div>
+</div>`).join('');
+}
+
+// ── INTERACTIONS ────────────────────────────────────────
+
+function toggleCard(id) {
+  const card = document.getElementById('card-' + id);
+  if (card) card.classList.toggle('open');
+}
+
+function switchTab(name) {
+  document.querySelectorAll('.tab').forEach((t,i) => {
+    const names = ['kennel','puppies','alerts'];
+    t.classList.toggle('active', names[i] === name);
+  });
+  document.querySelectorAll('.tab-panel').forEach(p => {
+    p.classList.toggle('active', p.id === 'tab-' + name);
+  });
+}
+
+// ── UTILS ───────────────────────────────────────────────
+
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function timeAgo(ts) {
+  if (!ts) return '—';
+  const diff = Math.floor((Date.now() - new Date(ts).getTime()) / 60000);
+  if (diff < 1) return 'just now';
+  if (diff < 60) return diff + 'm ago';
+  if (diff < 1440) return Math.floor(diff/60) + 'h ago';
+  return Math.floor(diff/1440) + 'd ago';
+}
+
+// ── DEMO MODE (when no real key) ────────────────────────
+
+function loadDemoData() {
+  kennelState = {
+    today: '2026-06-20',
+    dogs: [
+      { id: 'd1', name: 'Bella', breed: 'Rottweiler', sex: 'female', age_years: 3, status: 'active',
+        heat_cycles: [{ cycle_start: '2026-01-15', cycle_end: '2026-01-30' }],
+        recent_feeds: [{ fed_at: '2026-06-20T07:30:00Z' }],
+        health_due: [{ type: 'deworming', next_due: '2026-06-22' }] },
+      { id: 'd2', name: 'Rocky', breed: 'German Shepherd', sex: 'male', age_years: 4, status: 'active',
+        heat_cycles: [], recent_feeds: [], health_due: [] },
+      { id: 'd3', name: 'Coco', breed: 'Boerboel', sex: 'female', age_years: 2, status: 'active',
+        heat_cycles: [{ cycle_start: '2026-06-05' }],
+        recent_feeds: [{ fed_at: '2026-06-20T07:30:00Z' }], health_due: [] }
+    ],
+    litters: [{
+      id: 'l1', litter_name: "Bella's Litter A", whelp_date: '2026-06-01',
+      litter_age_days: 19, born_alive: 4,
+      puppies: [
+        { id: 'p1', name: 'Pup 1', colour: 'black', sex: 'female', status: 'available',
+          latest_weight: { weight_grams: 412 }, prev_weight: { weight_grams: 398 }, latest_temp: { temp_celsius: 37.1, flag: 'normal' } },
+        { id: 'p2', name: 'Pup 2', colour: 'brown', sex: 'male', status: 'reserved',
+          latest_weight: { weight_grams: 380 }, prev_weight: { weight_grams: 391 }, latest_temp: { temp_celsius: 37.4, flag: 'normal' } },
+        { id: 'p3', name: 'Pup 3', colour: 'black and white', sex: 'male', status: 'available',
+          latest_weight: { weight_grams: 295 }, prev_weight: { weight_grams: 314 }, latest_temp: { temp_celsius: 35.1, flag: 'low' } },
+        { id: 'p4', name: 'Pup 4', colour: 'black', sex: 'female', status: 'sold',
+          latest_weight: { weight_grams: 450 }, prev_weight: { weight_grams: 440 }, latest_temp: null }
+      ]
+    }]
+  };
+  alertsData = [
+    { id: 'a1', alert_type: 'puppy_temp_flag', priority: 'urgent', dog_id: null, puppy_id: 'p3',
+      message_owner: '🔴 *Urgent — Pup 3 temp low*\n\nPup 3 (black and white male, day 19) recorded 35.1°C — below the safe range of 37.5°C for week 3. Risk of hypothermia. Check immediately and apply gentle warmth.',
+      triggered_at: new Date(Date.now() - 45*60000).toISOString(), status: 'sent' },
+    { id: 'a2', alert_type: 'heat_prediction', priority: 'advisory', dog_id: 'd1',
+      message_owner: '🟡 *Heat Watch — Bella*\n\nBased on her last cycle (Jan 15), Bella is estimated to enter heat around Jul 15 — approximately 25 days away. Consider confirming stud availability.',
+      triggered_at: new Date(Date.now() - 3*3600000).toISOString(), status: 'sent' },
+    { id: 'a3', alert_type: 'puppy_weight_drop', priority: 'advisory', dog_id: null, puppy_id: 'p2',
+      message_owner: '🟡 Pup 2 (brown male) dropped 11g overnight — from 391g to 380g. At day 19 some fluctuation is normal but worth monitoring. Ensure he is nursing well.',
+      triggered_at: new Date(Date.now() - 6*3600000).toISOString(), status: 'sent' }
+  ];
+  render();
+}
+
+// ── INIT ────────────────────────────────────────────────
+
+if (SUPABASE_KEY === 'REPLACE_WITH_SUPABASE_ANON_KEY') {
+  loadDemoData();
+} else {
+  fetchAll();
+  setInterval(fetchAll, 5 * 60 * 1000);
+}
+</script>
+</body>
+</html>
