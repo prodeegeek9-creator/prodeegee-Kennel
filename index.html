@@ -401,7 +401,7 @@
 
 <script>
 const SUPABASE_URL = 'https://fsrkzhknqonpjjkjwqlw.supabase.co';
-const SUPABASE_KEY = 'REPLACE_WITH_SUPABASE_ANON_KEY';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZzcmt6aGtucW9ucGpqa2p3cWx3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY0NDA2MDcsImV4cCI6MjA5MjAxNjYwN30.8xi7-tb0X7Bp-_Eknlb8Kxdi5J9DGut-RYewEvB2-fk';
 
 const headers = {
   'apikey': SUPABASE_KEY,
@@ -420,11 +420,12 @@ async function fetchAll() {
       fetch(SUPABASE_URL + '/rest/v1/rpc/kennel_state_json', { method: 'POST', headers, body: '{}' }),
       fetch(SUPABASE_URL + '/rest/v1/kennel.ai_alerts?order=triggered_at.desc&limit=20&status=eq.sent', { headers })
     ]);
+    if (!stateRes.ok || !alertsRes.ok) throw new Error('Response error');
     kennelState = await stateRes.json();
     alertsData = await alertsRes.json();
     render();
   } catch(e) {
-    document.getElementById('headerSub').textContent = 'Could not connect';
+    document.getElementById('headerSub').textContent = 'Connection failed — check API key';
   }
 }
 
@@ -717,59 +718,10 @@ function timeAgo(ts) {
   return Math.floor(diff/1440) + 'd ago';
 }
 
-// ── DEMO MODE (when no real key) ────────────────────────
-
-function loadDemoData() {
-  kennelState = {
-    today: '2026-06-20',
-    dogs: [
-      { id: 'd1', name: 'Bella', breed: 'Rottweiler', sex: 'female', age_years: 3, status: 'active',
-        heat_cycles: [{ cycle_start: '2026-01-15', cycle_end: '2026-01-30' }],
-        recent_feeds: [{ fed_at: '2026-06-20T07:30:00Z' }],
-        health_due: [{ type: 'deworming', next_due: '2026-06-22' }] },
-      { id: 'd2', name: 'Rocky', breed: 'German Shepherd', sex: 'male', age_years: 4, status: 'active',
-        heat_cycles: [], recent_feeds: [], health_due: [] },
-      { id: 'd3', name: 'Coco', breed: 'Boerboel', sex: 'female', age_years: 2, status: 'active',
-        heat_cycles: [{ cycle_start: '2026-06-05' }],
-        recent_feeds: [{ fed_at: '2026-06-20T07:30:00Z' }], health_due: [] }
-    ],
-    litters: [{
-      id: 'l1', litter_name: "Bella's Litter A", whelp_date: '2026-06-01',
-      litter_age_days: 19, born_alive: 4,
-      puppies: [
-        { id: 'p1', name: 'Pup 1', colour: 'black', sex: 'female', status: 'available',
-          latest_weight: { weight_grams: 412 }, prev_weight: { weight_grams: 398 }, latest_temp: { temp_celsius: 37.1, flag: 'normal' } },
-        { id: 'p2', name: 'Pup 2', colour: 'brown', sex: 'male', status: 'reserved',
-          latest_weight: { weight_grams: 380 }, prev_weight: { weight_grams: 391 }, latest_temp: { temp_celsius: 37.4, flag: 'normal' } },
-        { id: 'p3', name: 'Pup 3', colour: 'black and white', sex: 'male', status: 'available',
-          latest_weight: { weight_grams: 295 }, prev_weight: { weight_grams: 314 }, latest_temp: { temp_celsius: 35.1, flag: 'low' } },
-        { id: 'p4', name: 'Pup 4', colour: 'black', sex: 'female', status: 'sold',
-          latest_weight: { weight_grams: 450 }, prev_weight: { weight_grams: 440 }, latest_temp: null }
-      ]
-    }]
-  };
-  alertsData = [
-    { id: 'a1', alert_type: 'puppy_temp_flag', priority: 'urgent', dog_id: null, puppy_id: 'p3',
-      message_owner: '🔴 *Urgent — Pup 3 temp low*\n\nPup 3 (black and white male, day 19) recorded 35.1°C — below the safe range of 37.5°C for week 3. Risk of hypothermia. Check immediately and apply gentle warmth.',
-      triggered_at: new Date(Date.now() - 45*60000).toISOString(), status: 'sent' },
-    { id: 'a2', alert_type: 'heat_prediction', priority: 'advisory', dog_id: 'd1',
-      message_owner: '🟡 *Heat Watch — Bella*\n\nBased on her last cycle (Jan 15), Bella is estimated to enter heat around Jul 15 — approximately 25 days away. Consider confirming stud availability.',
-      triggered_at: new Date(Date.now() - 3*3600000).toISOString(), status: 'sent' },
-    { id: 'a3', alert_type: 'puppy_weight_drop', priority: 'advisory', dog_id: null, puppy_id: 'p2',
-      message_owner: '🟡 Pup 2 (brown male) dropped 11g overnight — from 391g to 380g. At day 19 some fluctuation is normal but worth monitoring. Ensure he is nursing well.',
-      triggered_at: new Date(Date.now() - 6*3600000).toISOString(), status: 'sent' }
-  ];
-  render();
-}
-
 // ── INIT ────────────────────────────────────────────────
 
-if (SUPABASE_KEY === 'REPLACE_WITH_SUPABASE_ANON_KEY') {
-  loadDemoData();
-} else {
-  fetchAll();
-  setInterval(fetchAll, 5 * 60 * 1000);
-}
+fetchAll();
+setInterval(fetchAll, 5 * 60 * 1000);
 </script>
 </body>
 </html>
