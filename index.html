@@ -417,8 +417,8 @@ let alertsData = [];
 async function fetchAll() {
   try {
     const [stateRes, alertsRes] = await Promise.all([
-      fetch(SUPABASE_URL + '/rest/v1/rpc/kennel_state_json', { method: 'POST', headers: {...headers, 'Content-Profile': 'kennel'}, body: '{}' }),
-      fetch(SUPABASE_URL + '/rest/v1/ai_alerts?order=triggered_at.desc&limit=20&status=eq.sent', { headers: {...headers, 'Accept-Profile': 'kennel'} })
+      fetch(SUPABASE_URL + '/rest/v1/rpc/kennel_state_json', { method: 'POST', headers, body: '{}' }),
+      fetch(SUPABASE_URL + '/rest/v1/kennel_ai_alerts?order=triggered_at.desc&limit=20&status=eq.sent', { headers })
     ]);
     if (!stateRes.ok || !alertsRes.ok) throw new Error('Response error');
     kennelState = await stateRes.json();
