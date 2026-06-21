@@ -62,6 +62,13 @@
   .kennel-name { font-size: 15px; font-weight: 600; letter-spacing: -0.02em; }
   .kennel-sub { font-size: 11px; color: var(--cream-muted); margin-top: 1px; }
   .last-sync { font-size: 11px; color: var(--cream-dim); font-family: var(--mono); }
+  .notif-btn {
+    background: none; border: none; cursor: pointer; padding: 4px;
+    color: var(--cream-dim); font-size: 18px; line-height: 1;
+    transition: color .15s;
+  }
+  .notif-btn.active { color: var(--sage); }
+  .header-right { display: flex; align-items: center; gap: 10px; }
 
   /* ── ALERT STRIP ── */
   .alert-strip {
@@ -336,7 +343,10 @@
       <div class="kennel-sub" id="headerSub">Loading…</div>
     </div>
   </div>
-  <div class="last-sync" id="lastSync">—</div>
+  <div class="header-right">
+    <button class="notif-btn" id="notifBtn" onclick="toggleNotifications()" title="Enable notifications">🔔</button>
+    <div class="last-sync" id="lastSync">—</div>
+  </div>
 </div>
 
 <div class="alert-strip" id="alertStrip">
@@ -411,6 +421,7 @@ const headers = {
 
 let kennelState = null;
 let alertsData = [];
+let seenAlertIds = new Set(JSON.parse(localStorage.getItem('seenAlertIds') || '[]'));
 
 // ── FETCH ──────────────────────────────────────────────
 
@@ -423,6 +434,7 @@ async function fetchAll() {
     if (!stateRes.ok || !alertsRes.ok) throw new Error('Response error');
     kennelState = await stateRes.json();
     alertsData = await alertsRes.json();
+    checkNewAlerts(alertsData);
     render();
   } catch(e) {
     document.getElementById('headerSub').textContent = 'Connection failed — check API key';
@@ -686,6 +698,50 @@ function renderAlerts() {
 </div>`).join('');
 }
 
+// ── NOTIFICATIONS ───────────────────────────────────────
+
+function requestNotificationPermission() {
+  if (!('Notification' in window)) return;
+  if (Notification.permission === 'default') {
+    Notification.requestPermission().then(updateNotifBtn);
+  } else {
+    updateNotifBtn(Notification.permission);
+  }
+}
+
+function updateNotifBtn(permission) {
+  const btn = document.getElementById('notifBtn');
+  if (!btn) return;
+  btn.classList.toggle('active', permission === 'granted');
+  btn.title = permission === 'granted' ? 'Notifications on' : 'Enable notifications';
+}
+
+function toggleNotifications() {
+  if (!('Notification' in window)) return;
+  if (Notification.permission !== 'granted') {
+    Notification.requestPermission().then(updateNotifBtn);
+  }
+}
+
+function checkNewAlerts(alerts) {
+  if (!('Notification' in window) || Notification.permission !== 'granted') return;
+  const newAlerts = alerts.filter(a => a.id && !seenAlertIds.has(a.id));
+  newAlerts.forEach(a => {
+    const title = a.priority === 'urgent' ? '⚠ Urgent Kennel Alert'
+                : a.priority === 'advisory' ? 'Kennel Advisory'
+                : 'Kennel Info';
+    new Notification(title, {
+      body: (a.message_owner || '').slice(0, 150),
+      icon: '/favicon.ico',
+      tag: a.id
+    });
+    seenAlertIds.add(a.id);
+  });
+  if (newAlerts.length > 0) {
+    localStorage.setItem('seenAlertIds', JSON.stringify([...seenAlertIds]));
+  }
+}
+
 // ── INTERACTIONS ────────────────────────────────────────
 
 function toggleCard(id) {
@@ -720,6 +776,7 @@ function timeAgo(ts) {
 
 // ── INIT ────────────────────────────────────────────────
 
+requestNotificationPermission();
 fetchAll();
 setInterval(fetchAll, 5 * 60 * 1000);
 </script>
