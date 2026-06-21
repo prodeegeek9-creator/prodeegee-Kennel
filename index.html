@@ -700,27 +700,28 @@ function renderAlerts() {
 
 // ── NOTIFICATIONS ───────────────────────────────────────
 
-function requestNotificationPermission() {
+function syncNotifBtn() {
   if (!('Notification' in window)) return;
-  if (Notification.permission === 'default') {
-    Notification.requestPermission().then(updateNotifBtn);
-  } else {
-    updateNotifBtn(Notification.permission);
-  }
+  updateNotifBtn(Notification.permission);
 }
 
 function updateNotifBtn(permission) {
   const btn = document.getElementById('notifBtn');
   if (!btn) return;
   btn.classList.toggle('active', permission === 'granted');
-  btn.title = permission === 'granted' ? 'Notifications on' : 'Enable notifications';
+  btn.title = permission === 'granted' ? 'Notifications on'
+            : permission === 'denied'  ? 'Notifications blocked — check browser settings'
+            : 'Tap to enable alerts';
 }
 
 function toggleNotifications() {
   if (!('Notification' in window)) return;
-  if (Notification.permission !== 'granted') {
-    Notification.requestPermission().then(updateNotifBtn);
+  if (Notification.permission === 'granted') return;
+  if (Notification.permission === 'denied') {
+    alert('Notifications are blocked. To enable them, tap the 🔒 or ℹ️ icon in your browser address bar and allow notifications for this site.');
+    return;
   }
+  Notification.requestPermission().then(updateNotifBtn);
 }
 
 function checkNewAlerts(alerts) {
@@ -776,7 +777,7 @@ function timeAgo(ts) {
 
 // ── INIT ────────────────────────────────────────────────
 
-requestNotificationPermission();
+syncNotifBtn();
 fetchAll();
 setInterval(fetchAll, 5 * 60 * 1000);
 </script>
